@@ -17,6 +17,8 @@ public class AnimBase : MonoBehaviour
         private set;
     }
 
+    public bool sort = false;
+
     public AnimType animType;
 
     private int currentIndex = 0;
@@ -43,6 +45,19 @@ public class AnimBase : MonoBehaviour
     void Awake ()
     {
         count = frameLength;
+
+        if(sort)
+        {
+            var ts = new List<Transform>();
+
+            foreach(Transform t in Frames)
+                ts.Add(t);
+
+            ts.Sort((x, y) => x.name.CompareTo(y.name));
+
+            foreach (Transform t in ts)
+                t.SetAsLastSibling();
+        }
     }
 
     public void Trigger(Action callback)
