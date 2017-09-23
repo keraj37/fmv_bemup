@@ -6,10 +6,16 @@ public class SoundManager : MonoBehaviour
 {
     private static SoundManager instance;
     public AudioSource audioSource;
+    public AudioSource audioSourceMusic;
 
     void Awake()
     {
         instance = this;
+    }
+
+    public static void SetMusicVolume(float volume)
+    {
+        instance.audioSourceMusic.volume = volume;
     }
 
     public static void PlaySound(SoundCombo[] soundCombos, float volume = 1f)

@@ -21,6 +21,7 @@ public class SoundCombo
 public class Anims
 {
     public AnimName name;
+    public float hitAmount = 10f;
     public KeyCode triggerKey;
     public AnimPlayer anim;
     public SoundCombo[] sounds;
@@ -28,6 +29,11 @@ public class Anims
 
 public class PlayerController : MonoBehaviour
 {
+    private const float LIFE = 100f;
+    private const float POWER = 1f;
+
+    public new string name;
+
     public float regeneration = 0.2f;
     public float consumptionMin = 0.1f;
     public float consumptionMax = 0.25f;
@@ -45,10 +51,16 @@ public class PlayerController : MonoBehaviour
     public LifeBar bar;
     public LifeBar barPower;
 
-    private float power = 1f;
-    public float life = 100f;
+    private float power = POWER;
+    public float life = LIFE;
 
     public SoundCombo[] tiredSounds;
+
+    public System.Action<Anims> onHitTry;
+
+    public float startX;
+
+    public bool active = false;
 
     void Start()
     {
@@ -57,13 +69,31 @@ public class PlayerController : MonoBehaviour
 
     public void Init()
     {
+        Reset();
+
         DisableAnims();
         StartIdle();
+
+        foreach (var i in anims)
+            i.anim.onHitFrame += x => onHitTry(anims.First(y => y.anim == x));
+    }
+
+    public void Reset()
+    {
+        this.transform.position = new Vector3(startX, this.transform.position.y, this.transform.position.z);
+
+        power = POWER;
+        life = LIFE;
+
         bar.maxLife = life;
         bar.Life = life;
 
         barPower.maxLife = power;
         barPower.Life = power;
+
+        active = true;
+
+        UpdateBars();
     }
 
     private void StartIdle()
@@ -77,12 +107,16 @@ public class PlayerController : MonoBehaviour
             i.anim.Active = false;
     }
 
-    public void Hit(float lifeTaken)
+    public bool Hit(float lifeTaken)
     {
         DisableAnims();
         anims.First(x => x.name == AnimName.HIT).anim.Trigger(() => StartIdle());
+        SoundManager.PlaySound(anims.First(x => x.name == AnimName.HIT).sounds);
         life -= lifeTaken;
+
         UpdateBars();
+
+        return life <= 0f;
     }
 
     private void UpdateBars()
@@ -100,6 +134,9 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        if (!active)
+            return;
+
         if (Input.GetKey(right))
         {
             this.transform.Translate(Vector3.right * speed);
@@ -120,6 +157,8 @@ public class PlayerController : MonoBehaviour
         }
 
         power += regeneration * Time.deltaTime;
+        if (power > 1f)
+            power = 1f;
 
         foreach (var i in anims)
         {

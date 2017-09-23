@@ -26,6 +26,9 @@ public class AnimBase : MonoBehaviour
     public float frameLength = 0.02f;
     private int direction = 1;
 
+    public int hitFrame = -1;
+    public float hitDistance = 3f;
+    public Action<AnimBase> onHitFrame;
     public Action onEndCallback;
 
     protected bool active = false;
@@ -106,5 +109,11 @@ public class AnimBase : MonoBehaviour
         currentIndex += direction;
 
         Frames.GetChild(currentIndex).gameObject.SetActive(true);
+
+        if(hitFrame != -1 && currentIndex == hitFrame)
+        {
+            if(onHitFrame != null)
+                onHitFrame(this);
+        }
     }
 }
