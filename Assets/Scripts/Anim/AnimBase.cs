@@ -1,30 +1,67 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
+
+public enum AnimType
+{
+    LOOP,
+    TRIGGER
+}
 
 public class AnimBase : MonoBehaviour
 {
-    public const int FRAME_RATE = 24;
-
     protected virtual Transform Frames
     {
         get;
         private set;
     }
 
+    public AnimType animType;
+
     private int currentIndex = 0;
     private float count;
-    private float frameLength = 1f / FRAME_RATE;
-    private bool directionUp = true;
+    public float frameLength = 0.02f;
+    private int direction = 1;
+
+    public Action onEndCallback;
+
+    protected bool active = false;
+    public bool Active
+    {
+        get { return active; }
+        set
+        {
+            active = value;
+            this.gameObject.SetActive(value);
+            Frames.GetChild(currentIndex).gameObject.SetActive(false);
+            currentIndex = 0;
+            Frames.GetChild(currentIndex).gameObject.SetActive(true);
+        }
+    }
 
     void Awake ()
     {
         count = frameLength;
     }
-	
-	void Update ()
+
+    public void Trigger(Action callback)
     {
-        if (Frames == null)
+        onEndCallback = callback;
+        Active = true;
+    }
+
+    private void Finish()
+    {
+        if (onEndCallback != null)
+            onEndCallback();
+
+        Active = false;
+    }
+
+    void Update ()
+    {
+        if (Frames == null || !Active)
             return;
 
         count -= Time.deltaTime;
@@ -36,20 +73,23 @@ public class AnimBase : MonoBehaviour
 
         Frames.GetChild(currentIndex).gameObject.SetActive(false);
 
-        currentIndex += directionUp ? 1 : -1;
+        if (direction > 0 && currentIndex + 1 >= Frames.childCount)
+        {
+            if(animType == AnimType.LOOP)
+                direction = -1;
+            else
+            {
+                Finish();
+                return;
+            }
+        }
+        else if (direction < 0 && currentIndex <= 0)
+        {
+            direction = 1;
+        }
 
-        if (directionUp && Frames.childCount <= currentIndex)
-        {
-            currentIndex--;
-            directionUp = false;
-        }
-        else if (!directionUp && 0 > currentIndex)
-        {
-            currentIndex = 0;
-            directionUp = true;
-        }
+        currentIndex += direction;
 
         Frames.GetChild(currentIndex).gameObject.SetActive(true);
-
     }
 }
